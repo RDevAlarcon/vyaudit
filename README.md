@@ -1,63 +1,67 @@
-# VYAUDIT MVP
+﻿# VYAUDIT MVP
 
-Auditoría inteligente de sitios web.  
+Auditoria inteligente de sitios web.  
 Producto oficial de **Vytronix SpA**.
 
 ## 1) Estructura de carpetas
 
 ```text
 vyaudit/
-├─ db/
-│  └─ schema.sql
-├─ docs/
-│  ├─ mock-api-response.json
-│  └─ mock-report.md
-├─ src/
-│  ├─ app/
-│  │  ├─ api/
-│  │  │  └─ audit/route.ts
-│  │  ├─ results/page.tsx
-│  │  ├─ globals.css
-│  │  ├─ layout.tsx
-│  │  └─ page.tsx
-│  ├─ components/
-│  │  ├─ ReportViewer.tsx
-│  │  └─ UrlForm.tsx
-│  ├─ lib/
-│  │  ├─ audit.ts
-│  │  ├─ db.ts
-│  │  ├─ html.ts
-│  │  ├─ psi.ts
-│  │  ├─ reportGenerator.ts
-│  │  ├─ reportPrompt.ts
-│  │  ├─ rules.ts
-│  │  ├─ scoring.ts
-│  │  ├─ tiers.ts
-│  │  └─ url.ts
-│  └─ types/
-│     └─ audit.ts
-├─ .env.example
-├─ next.config.ts
-├─ package.json
-├─ postcss.config.js
-├─ tailwind.config.ts
-└─ tsconfig.json
+|- db/
+|  |- schema.sql
+|- docs/
+|  |- mock-api-response.json
+|  |- mock-report.md
+|- src/
+|  |- app/
+|  |  |- api/
+|  |  |  |- audit/route.ts
+|  |  |- results/page.tsx
+|  |  |- globals.css
+|  |  |- layout.tsx
+|  |  |- page.tsx
+|  |- components/
+|  |  |- ReportViewer.tsx
+|  |  |- ResultsClient.tsx
+|  |  |- UrlForm.tsx
+|  |- lib/
+|  |  |- audit.ts
+|  |  |- db.ts
+|  |  |- email.ts
+|  |  |- html.ts
+|  |  |- psi.ts
+|  |  |- reportGenerator.ts
+|  |  |- reportPrompt.ts
+|  |  |- rules.ts
+|  |  |- scoring.ts
+|  |  |- tiers.ts
+|  |  |- url.ts
+|  |- types/
+|     |- audit.ts
+|- public/
+|- .env.example
+|- next.config.ts
+|- package.json
+|- postcss.config.js
+|- tailwind.config.ts
+|- tsconfig.json
 ```
 
 ## 2) Flujo funcional del MVP
 
-1. Usuario ingresa URL en `/`.
-2. Se valida formato y redirige a `/results?url=...`.
+1. Usuario ingresa URL y correo en `/`.
+2. Se valida formato y redirige a `/results?url=...&email=...`.
 3. Frontend llama `POST /api/audit`.
 4. Backend:
-   - Normaliza URL a HTTPS y valida dominio público.
+   - Normaliza URL a HTTPS y valida dominio publico.
    - Ejecuta PSI (Performance, SEO, Accesibilidad, CWV).
    - Analiza HTML con Cheerio.
    - Aplica reglas propias VyAudit.
-   - Consolida score global por categoría.
-   - Genera informe en Markdown siguiendo estructura obligatoria.
+   - Consolida score global por categoria.
+   - Genera informe en Markdown con estructura obligatoria.
    - Persiste resultado en PostgreSQL si `DATABASE_URL` existe.
-5. Frontend renderiza informe + botón "Descargar PDF" (`window.print()`).
+   - Envia respaldo por correo si SMTP esta configurado.
+5. Frontend renderiza informe + boton `Descargar PDF` (`window.print()`).
 
 ## 3) Ejecutar local
 
@@ -72,35 +76,40 @@ Variables:
 cp .env.example .env
 ```
 
-- `PSI_API_KEY`: opcional, recomendado para mayor estabilidad.
-- `OPENAI_API_KEY`: opcional, si existe usa IA para redactar informe.
-- `DATABASE_URL`: opcional, habilita persistencia de auditorías.
+- `PSI_API_KEY`: recomendado.
+- `OPENAI_API_KEY`: opcional para narrativa IA.
+- `DATABASE_URL`: opcional para persistencia.
+- `SMTP_*`: opcional para respaldo por correo.
 
 ## 4) Cumplimiento de reglas clave
 
-- URL única como entrada: ✅
-- Sin login: ✅
-- Sin invención de datos: ✅
-- Fallback explícito `"No detectable"`: ✅
-- Estructura fija del informe VyAudit: ✅
-- Base escalable Free/Pro/Enterprise: ✅ (`src/lib/tiers.ts`)
-- Código modular y documentado: ✅
+- URL unica como entrada: OK
+- Correo obligatorio para respaldo: OK
+- Sin login: OK
+- Sin invencion de datos: OK
+- Fallback explicito `No detectable`: OK
+- Estructura fija del informe VyAudit: OK
+- Codigo modular y documentado: OK
 
 ## 5) IA y prompt estructurado VyAudit
 
 - Prompt interno: `src/lib/reportPrompt.ts`
-- Generación:
-  - Con IA (si hay `OPENAI_API_KEY`): `src/lib/reportGenerator.ts`
-  - Sin IA: plantilla determinística con la misma estructura obligatoria.
+- Generacion:
+  - Con IA (si hay `OPENAI_API_KEY`): narrativa ejecutiva compacta.
+  - Sin IA: plantilla deterministica con la misma estructura obligatoria.
 
-## 6) Base de datos (preparada)
+## 6) Base de datos
 
-Aplicar `db/schema.sql` sobre PostgreSQL para guardar auditorías por dominio y fecha.
+Aplicar `db/schema.sql` sobre PostgreSQL para guardar auditorias por dominio y fecha.
 
 ## 7) Escalabilidad por plan
 
-Definida en `src/lib/tiers.ts`:
+Definida en `src/lib/tiers.ts`.
 
-- **Free**: 1 URL principal, reporte base (lead magnet).
-- **Pro**: multipágina, benchmark competitivo, tracking audit, mayor profundidad.
-- **Enterprise**: crawling masivo, reporting ejecutivo ampliado, analítica y seguridad avanzada.
+Modo comercial actual:
+- **Pro**: plan activo para produccion (servicio pagado).
+
+Planes de escalado:
+- **Free (legacy tecnico)**: conservado solo para escenarios internos/lead magnet.
+- **Pro**: multipagina, benchmark competitivo, tracking audit, mayor profundidad.
+- **Enterprise**: crawling masivo, reporting ejecutivo ampliado, analitica y seguridad avanzada.
