@@ -80,6 +80,7 @@ cp .env.example .env
 - `OPENAI_API_KEY`: opcional para narrativa IA.
 - `DATABASE_URL`: opcional para persistencia.
 - `SMTP_*`: opcional para respaldo por correo.
+- `CHROME_PATH`: opcional; si esta disponible se genera adjunto PDF browser-like (mas fiel al de `window.print()`).
 
 ## 4) Cumplimiento de reglas clave
 
