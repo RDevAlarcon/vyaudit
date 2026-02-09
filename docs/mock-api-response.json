@@ -1,0 +1,15 @@
+{
+  "domain": "ejemplo.com",
+  "generatedAt": "2026-02-08T12:00:00.000Z",
+  "auditType": "Free",
+  "scores": {
+    "performance": 78,
+    "seo": 64,
+    "accessibility": 69,
+    "uxConversion": 67,
+    "security": 77,
+    "total": 71
+  },
+  "reportMarkdown": "# 1. PORTADA\n- **VyAudit**\n- **Dominio auditado:** ejemplo.com\n...",
+  "promptUsed": "Eres consultor senior de Vytronix SpA..."
+}
