@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { buildAuditPdfFilename, renderAuditPdfBuffer } from "@/lib/pdf";
 
 export type EmailSendResult = {
   status: "sent" | "skipped" | "failed";
@@ -44,23 +45,36 @@ export async function sendAuditReportEmail(input: {
   const text = [
     "Hola,",
     "",
-    `Adjuntamos tu respaldo del informe VyAudit para ${input.domain}.`,
+    `Adjuntamos tu informe VyAudit en PDF para ${input.domain}.`,
     `Fecha de emision: ${dateText}`,
     `Tipo de auditoria: ${input.auditType}`,
     `Puntaje total: ${input.totalScore}/100`,
     "",
-    "INFORME:",
-    input.reportMarkdown,
-    "",
+    "Este mensaje es tu respaldo oficial.",
     "Vytronix SpA | VyAudit"
   ].join("\n");
 
   try {
+    const pdfBuffer = await renderAuditPdfBuffer({
+      domain: input.domain,
+      generatedAt: input.generatedAt,
+      auditType: input.auditType,
+      totalScore: input.totalScore,
+      reportMarkdown: input.reportMarkdown
+    });
+
     await transporter.sendMail({
       from,
       to: input.to,
       subject,
-      text
+      text,
+      attachments: [
+        {
+          filename: buildAuditPdfFilename(input.domain),
+          content: pdfBuffer,
+          contentType: "application/pdf"
+        }
+      ]
     });
     return { status: "sent", detail: "email_sent" };
   } catch (error) {
