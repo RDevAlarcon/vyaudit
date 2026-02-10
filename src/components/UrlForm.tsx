@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 
 const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
-export function UrlForm() {
+type UrlFormProps = {
+  accessToken?: string;
+  adminBridgeToken?: string;
+};
+
+export function UrlForm({ accessToken, adminBridgeToken }: UrlFormProps) {
   const [url, setUrl] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +42,12 @@ export function UrlForm() {
     if (cleanEmail) {
       params.set("email", cleanEmail);
     }
+    if (accessToken) {
+      params.set("token", accessToken);
+    }
+    if (adminBridgeToken) {
+      params.set("bridge", adminBridgeToken);
+    }
     router.push(`/results?${params.toString()}`);
   }
 
@@ -61,6 +72,8 @@ export function UrlForm() {
           Analizar sitio
         </button>
       </div>
+      {accessToken ? <input type="hidden" value={accessToken} readOnly aria-hidden="true" /> : null}
+      {adminBridgeToken ? <input type="hidden" value={adminBridgeToken} readOnly aria-hidden="true" /> : null}
       <div>
         <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="contact-email">
           Correo para respaldo del informe

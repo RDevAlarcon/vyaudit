@@ -13,13 +13,17 @@ function getPool(): Pool | null {
   return pool;
 }
 
-export async function persistAudit(audit: ConsolidatedAudit, reportMarkdown: string): Promise<void> {
+export function getDbPool(): Pool | null {
+  return getPool();
+}
+
+export async function persistAudit(audit: ConsolidatedAudit, reportMarkdown: string): Promise<number | null> {
   const db = getPool();
   if (!db) {
-    return;
+    return null;
   }
 
-  await db.query(
+  const result = await db.query<{ id: number }>(
     `
       INSERT INTO audit_results (
         domain,
@@ -31,6 +35,7 @@ export async function persistAudit(audit: ConsolidatedAudit, reportMarkdown: str
         report_markdown
       )
       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
+      RETURNING id
     `,
     [
       audit.domain,
@@ -42,4 +47,6 @@ export async function persistAudit(audit: ConsolidatedAudit, reportMarkdown: str
       reportMarkdown
     ]
   );
+
+  return result.rows[0]?.id ?? null;
 }

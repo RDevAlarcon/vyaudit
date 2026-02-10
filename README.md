@@ -49,10 +49,12 @@ vyaudit/
 
 ## 2) Flujo funcional del MVP
 
-1. Usuario ingresa URL y correo en `/`.
-2. Se valida formato y redirige a `/results?url=...&email=...`.
-3. Frontend llama `POST /api/audit`.
-4. Backend:
+1. Cliente usa enlace unico recibido por pago: `/run/<token>`.
+2. Ingresa URL y correo.
+3. Se valida formato y redirige a `/results?url=...&email=...&token=...`.
+4. Frontend llama `POST /api/audit`.
+5. Backend:
+   - Valida y consume token (uso unico).
    - Normaliza URL a HTTPS y valida dominio publico.
    - Ejecuta PSI (Performance, SEO, Accesibilidad, CWV).
    - Analiza HTML con Cheerio.
@@ -61,7 +63,7 @@ vyaudit/
    - Genera informe en Markdown con estructura obligatoria.
    - Persiste resultado en PostgreSQL si `DATABASE_URL` existe.
    - Envia respaldo por correo si SMTP esta configurado.
-5. Frontend renderiza informe + boton `Descargar PDF` (`window.print()`).
+6. Frontend renderiza informe + boton `Descargar PDF` (`window.print()`).
 
 ## 3) Ejecutar local
 
@@ -81,6 +83,10 @@ cp .env.example .env
 - `DATABASE_URL`: opcional para persistencia.
 - `SMTP_*`: opcional para respaldo por correo.
 - `CHROME_PATH`: opcional; si esta disponible se genera adjunto PDF browser-like (mas fiel al de `window.print()`).
+- `APP_BASE_URL`: base URL para construir link de ejecucion por token.
+- `ADMIN_ACCESS_KEY`: clave para crear tokens desde `POST /api/tokens/create`.
+- `BRIDGE_SHARED_SECRET`: secreto compartido para validar token firmado de rol admin desde la app principal.
+- `BRIDGE_ISSUER`: issuer esperado del token admin (opcional pero recomendado).
 
 ## 4) Cumplimiento de reglas clave
 
@@ -114,3 +120,25 @@ Planes de escalado:
 - **Free (legacy tecnico)**: conservado solo para escenarios internos/lead magnet.
 - **Pro**: multipagina, benchmark competitivo, tracking audit, mayor profundidad.
 - **Enterprise**: crawling masivo, reporting ejecutivo ampliado, analitica y seguridad avanzada.
+
+## 8) Tokens de pago (uso unico)
+
+- Endpoint admin para emitir token: `POST /api/tokens/create`
+- Header requerido: `x-admin-key: <ADMIN_ACCESS_KEY>`
+- Body ejemplo:
+
+```json
+{
+  "customerEmail": "cliente@correo.com",
+  "allowedDomain": "midominio.cl"
+}
+```
+
+- Respuesta incluye `runUrl` para enviar al cliente.
+- El token se consume una sola vez en `/api/audit`.
+
+## 9) Acceso admin desde otra aplicacion
+
+- Ruta admin: `/admin/run?bridge=<token_firmado>`
+- La otra app (autenticada) genera token HMAC firmado con `BRIDGE_SHARED_SECRET` incluyendo rol `admin`.
+- Mientras el token admin sea valido, `/api/audit` permite ejecucion sin consumir token de pago.

@@ -9,6 +9,8 @@ export function ResultsClient() {
   const params = useSearchParams();
   const url = params.get("url") ?? "";
   const email = params.get("email") ?? "";
+  const token = params.get("token") ?? "";
+  const bridge = params.get("bridge") ?? "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [payload, setPayload] = useState<AuditApiResponse | null>(null);
@@ -27,6 +29,11 @@ export function ResultsClient() {
         setLoading(false);
         return;
       }
+      if (!token && !bridge) {
+        setError("No se recibio un token de acceso valido.");
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       setError("");
@@ -35,7 +42,13 @@ export function ResultsClient() {
         const response = await fetch("/api/audit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, auditType: "Pro", email })
+          body: JSON.stringify({
+            url,
+            auditType: "Pro",
+            email,
+            accessToken: token || undefined,
+            adminBridgeToken: bridge || undefined
+          })
         });
 
         const json = (await response.json()) as AuditApiResponse | { error: string };
@@ -61,7 +74,7 @@ export function ResultsClient() {
     return () => {
       active = false;
     };
-  }, [url, email]);
+  }, [url, email, token, bridge]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">

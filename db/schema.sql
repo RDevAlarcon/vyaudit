@@ -14,3 +14,21 @@ CREATE TABLE IF NOT EXISTS audit_results (
 
 CREATE INDEX IF NOT EXISTS idx_audit_results_domain ON audit_results(domain);
 CREATE INDEX IF NOT EXISTS idx_audit_results_audited_at ON audit_results(audited_at DESC);
+
+CREATE TABLE IF NOT EXISTS audit_access_tokens (
+  id BIGSERIAL PRIMARY KEY,
+  token_hash TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'used', 'expired')) DEFAULT 'pending',
+  customer_email TEXT NOT NULL,
+  allowed_domain TEXT,
+  remaining_uses INT NOT NULL DEFAULT 1 CHECK (remaining_uses >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  last_used_at TIMESTAMPTZ,
+  used_at TIMESTAMPTZ,
+  audit_result_id BIGINT REFERENCES audit_results(id) ON DELETE SET NULL,
+  last_error TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_access_tokens_status ON audit_access_tokens(status);
+CREATE INDEX IF NOT EXISTS idx_audit_access_tokens_expires_at ON audit_access_tokens(expires_at);
