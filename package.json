@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:push": "psql \"%DATABASE_URL%\" -f db/schema.sql"
+    "db:push": "node scripts/db-push.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",

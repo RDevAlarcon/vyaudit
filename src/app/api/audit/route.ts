@@ -28,10 +28,12 @@ export async function POST(request: Request) {
       ? verifyAdminBridgeToken(parsed.data.adminBridgeToken)
       : null;
     const isAdmin = bridgeVerification?.ok ?? false;
+    const bridgeErrorReason =
+      bridgeVerification && !bridgeVerification.ok ? bridgeVerification.reason : "unknown_reason";
 
     if (parsed.data.adminBridgeToken && !isAdmin) {
       return NextResponse.json(
-        { error: `Token admin invalido: ${bridgeVerification?.reason ?? "unknown_reason"}` },
+        { error: `Token admin invalido: ${bridgeErrorReason}` },
         { status: 403 }
       );
     }

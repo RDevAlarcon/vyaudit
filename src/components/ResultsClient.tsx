@@ -5,6 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { ReportViewer } from "@/components/ReportViewer";
 import type { AuditApiResponse } from "@/types/audit";
 
+declare global {
+  interface Window {
+    __VYAUDIT_RUNS__?: Record<string, Promise<AuditApiResponse>>;
+    __VYAUDIT_CACHE__?: Record<string, AuditApiResponse>;
+  }
+}
+
 export function ResultsClient() {
   const params = useSearchParams();
   const url = params.get("url") ?? "";
@@ -19,6 +26,7 @@ export function ResultsClient() {
 
   useEffect(() => {
     let active = true;
+    const dedupeKey = `${url}|${email}|${token}|${bridge}`;
 
     async function runAudit() {
       if (!url) {
@@ -41,25 +49,49 @@ export function ResultsClient() {
       setError("");
 
       try {
-        const response = await fetch("/api/audit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url,
-            auditType: "Pro",
-            email,
-            accessToken: token || undefined,
-            adminBridgeToken: bridge || undefined
-          })
-        });
+        if (typeof window !== "undefined") {
+          window.__VYAUDIT_CACHE__ = window.__VYAUDIT_CACHE__ ?? {};
+          window.__VYAUDIT_RUNS__ = window.__VYAUDIT_RUNS__ ?? {};
 
-        const json = (await response.json()) as AuditApiResponse | { error: string };
-        if (!response.ok || "error" in json) {
-          throw new Error("error" in json ? json.error : "No fue posible completar la auditoria.");
-        }
+          const cached = window.__VYAUDIT_CACHE__[dedupeKey];
+          if (cached) {
+            if (active) {
+              setPayload(cached);
+            }
+            return;
+          }
 
-        if (active) {
-          setPayload(json);
+          if (!window.__VYAUDIT_RUNS__[dedupeKey]) {
+            window.__VYAUDIT_RUNS__[dedupeKey] = (async () => {
+              const response = await fetch("/api/audit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  url,
+                  auditType: "Pro",
+                  email,
+                  accessToken: token || undefined,
+                  adminBridgeToken: bridge || undefined
+                })
+              });
+
+              const json = (await response.json()) as AuditApiResponse | { error: string };
+              if (!response.ok || "error" in json) {
+                throw new Error("error" in json ? json.error : "No fue posible completar la auditoria.");
+              }
+
+              return json;
+            })();
+          }
+
+          const finalPayload = await window.__VYAUDIT_RUNS__[dedupeKey];
+          window.__VYAUDIT_CACHE__[dedupeKey] = finalPayload;
+          delete window.__VYAUDIT_RUNS__[dedupeKey];
+
+          if (active) {
+            setPayload(finalPayload);
+          }
+          return;
         }
       } catch (caught) {
         if (active) {
