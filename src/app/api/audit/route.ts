@@ -24,10 +24,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Solicitud invalida." }, { status: 400 });
     }
 
-    const isAdmin = (() => {
-      if (!parsed.data.adminBridgeToken) return false;
-      return verifyAdminBridgeToken(parsed.data.adminBridgeToken).ok;
-    })();
+    const bridgeVerification = parsed.data.adminBridgeToken
+      ? verifyAdminBridgeToken(parsed.data.adminBridgeToken)
+      : null;
+    const isAdmin = bridgeVerification?.ok ?? false;
+
+    if (parsed.data.adminBridgeToken && !isAdmin) {
+      return NextResponse.json(
+        { error: `Token admin invalido: ${bridgeVerification?.reason ?? "unknown_reason"}` },
+        { status: 403 }
+      );
+    }
 
     if (!isAdmin && !parsed.data.accessToken) {
       return NextResponse.json({ error: "Token de acceso requerido." }, { status: 403 });

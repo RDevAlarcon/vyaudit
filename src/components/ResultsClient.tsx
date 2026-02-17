@@ -11,9 +11,11 @@ export function ResultsClient() {
   const email = params.get("email") ?? "";
   const token = params.get("token") ?? "";
   const bridge = params.get("bridge") ?? "";
+  const bridgeRefreshUrl = process.env.NEXT_PUBLIC_VYTRONIX_ADMIN_LINK_URL ?? "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [payload, setPayload] = useState<AuditApiResponse | null>(null);
+  const adminBackHref = bridgeRefreshUrl || (bridge ? `/admin/run?bridge=${encodeURIComponent(bridge)}` : "");
 
   useEffect(() => {
     let active = true;
@@ -78,9 +80,19 @@ export function ResultsClient() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Resultado de auditoria VyAudit</h1>
-        <p className="text-sm text-slate-600">Analisis para: {url || "No detectable"}</p>
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Resultado de auditoria VyAudit</h1>
+          <p className="text-sm text-slate-600">Analisis para: {url || "No detectable"}</p>
+        </div>
+        {bridge ? (
+          <a
+            href={adminBackHref}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Volver para nueva auditoria
+          </a>
+        ) : null}
       </div>
 
       {loading ? (
